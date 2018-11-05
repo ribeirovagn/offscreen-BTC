@@ -4,8 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
         "This file is @generated automatically"
     ],
-    "hash": "2aa59563687e85faf339d22c7c0db5f4",
-    "content-hash": "e7124ef6dbbff57c76549e11bcd6e737",
+    "hash": "2a1eb99eef8b3d63643f06e8cea300fa",
+    "content-hash": "109f3062a5675dd5706d6b5a1df705a0",
     "packages": [
         {
             "name": "denpa/laravel-bitcoinrpc",

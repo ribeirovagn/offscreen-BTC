@@ -37,7 +37,7 @@ class TransactionController extends Controller {
                     'txid' => $saida['txid'],
                     'vout' => $saida['vout'],
                     'scriptPubKey' => $saida['scriptPubKey'],
-                    'redeemScript' => '5221033094d0c601b5b30aced38a05eb13794953f11b716f9cbceb9e1e1f09adfbcb5521026ad7017fc261b4f0f3bc3961cab5c2dd6e7af0893826646084eeefc5e05637302103aa95d256540a02b7f3d9790b456f61dff2d507413cad91385917417c1086e44253ae',
+                    'redeemScript' => env('REDEEMSCRIPT'),
                     'amount' => $saida['amount']
                 ];
 
@@ -55,35 +55,35 @@ class TransactionController extends Controller {
 
             $hex = bitcoind()->createrawtransaction($translist, $where);
 
-            $sign = bitcoind()->signrawtransaction($hex->get(), $translist, [$data['scriptPubKey']]);
-            $signed = $sign->get();
-
-
-            if (isset($data['scriptPubKey2'])) {
-                $sign = bitcoind()->signrawtransaction($signed['hex'], $translist, [$data['scriptPubKey']]);
-                $signed = $sign->get();
-            } else {
-                $sign = bitcoind()->signrawtransaction($signed['hex'], $translist, ['KyHJu81GcGp8Lm6dxpZnXzQRtBEpAcht88UeXWzQL1XnWjq2WpmT']);
-                $signed = $sign->get();
-            }
-
+            $signed = $this->signrawtransaction($hex->get(), $translist, $data['scriptPubKey']);
+            $signed = $this->signrawtransaction($signed['hex'], $translist, $data['scriptPubKey2']);
+            
             $return_tx = bitcoind()->sendrawtransaction($signed['hex']);
-            $tx = $return_tx->get();
-
-            return $tx;
+            return $return_tx->get();
+            
         } catch (\Exception $ex) {
             throw new Exception($ex->getMessage());
         }
     }
+    
+    
+    
+    private function checkAuthenticity($transaction){
+        
+    }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * 
+     * Assina as transações
+     * 
+     * @param type $hex
+     * @param type $unspend
+     * @param type $privKey
+     * @return type
      */
-    public function store(Request $request) {
-        //
+    private function signrawtransaction($hex, $unspend, $privKey) {
+        $sign = bitcoind()->signrawtransaction($signed['hex'], $translist, [$data['scriptPubKey']]);
+        return $sign->get();
     }
 
     /**
@@ -92,38 +92,7 @@ class TransactionController extends Controller {
      * @param  \App\Transaction  $transaction
      * @return \Illuminate\Http\Response
      */
-    public function show(Transaction $transaction) {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  \App\Transaction  $transaction
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Transaction $transaction) {
-        //
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  \App\Transaction  $transaction
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Transaction $transaction) {
-        //
-    }
-
-    /**
-     * Remove the specified resource from storage.
-     *
-     * @param  \App\Transaction  $transaction
-     * @return \Illuminate\Http\Response
-     */
-    public function destroy(Transaction $transaction) {
+    public function show($txid) {
         //
     }
 

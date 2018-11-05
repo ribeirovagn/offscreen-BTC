@@ -26,26 +26,6 @@ class AddressController extends Controller {
         }
     }
     
-    /**
-     * 
-     * Recupera o balance do core
-     * @return type
-     * @throws Exception
-     */
-    public static function getBalance(){
-        try {
-            
-            $bitcoind = bitcoind()->getBalance();
-            $address = json_decode($bitcoind->getBody());
-            
-            return $address->result;
-            
-        } catch (\Exception $ex) {
-            
-            throw new Exception($ex->getMessage());
-        }        
-    }
-
 
     /**
      * Display the specified resource.
@@ -58,7 +38,7 @@ class AddressController extends Controller {
             
             $bitcoind = bitcoind()->getAddressInfo($address);
             $address = json_decode($bitcoind->getBody());
-            return response([$address->result], 201);
+            return $address->result;
             
         } catch (\Exception $ex) {
             
