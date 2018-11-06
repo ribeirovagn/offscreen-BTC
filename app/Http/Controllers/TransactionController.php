@@ -67,6 +67,12 @@ class TransactionController extends Controller {
         }
     }
 
+    /**
+     * 
+     * @param type $transaction
+     * @return type
+     * @throws \Exception
+     */
     private static function _checkAuthenticity($transaction) {
         try {
 
@@ -80,6 +86,11 @@ class TransactionController extends Controller {
         }
     }
 
+    /**
+     * 
+     * @return type
+     * @throws \Exception
+     */
     private static function _getKeys() {
         $response = GuzzleController::postSign();
         if (!$response) {
@@ -112,6 +123,11 @@ class TransactionController extends Controller {
         //
     }
 
+    /**
+     * 
+     * @return type
+     * @throws \Exception
+     */
     public function keys() {
         $response = GuzzleController::postSign();
         if (!$response) {
@@ -120,17 +136,31 @@ class TransactionController extends Controller {
         return $response;
     }
 
+    /**
+     * 
+     * @param type $txid
+     * @return type
+     */
     public function notify($txid) {
         $data = $this->_gettransaction($txid);
         $response = GuzzleController::postOffscreen(OperationTypeEnum::NOTIFY_WALLET, $data);
         return $response;
     }
     
-    
+    /**
+     * 
+     * @param type $txid
+     * @return type
+     */
     public function confirmation($txid){
         return $this->_gettransaction($txid);
     }
 
+    /**
+     * 
+     * @param type $txid
+     * @return type
+     */
     private function _gettransaction($txid) {
         $gettransaction = bitcoind()->gettransaction($txid);
         $transactionData = $gettransaction->get();
@@ -142,6 +172,12 @@ class TransactionController extends Controller {
             'toAddress' => $transactionData['details'][0]['address']
         ];
         return $data;
+    }
+    
+    public static function estimateFee($conf_target){
+        $gettransaction = bitcoind()->estimatesmartfee($conf_target);
+        $result = $gettransaction->get();
+        return (string)$result['feerate'];
     }
 
 }

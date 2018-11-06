@@ -42,6 +42,10 @@ class OperationController extends Controller {
                     $result = TransactionController::confirmation($input['data']['txid']);
                     break;
 
+                case OperationTypeEnum::ESTIMATE_SMART_FEE:
+                    $result = TransactionController::estimateFee($input['data']);
+                    break;
+
                 default:
                     throw new \Exception('EDI');
             }
