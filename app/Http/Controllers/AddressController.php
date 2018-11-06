@@ -28,7 +28,7 @@ class AddressController extends Controller {
     
 
     /**
-     * Display the specified resource.
+     * Display info.
      *
      * @param  \App\Address  $address
      * @return \Illuminate\Http\Response

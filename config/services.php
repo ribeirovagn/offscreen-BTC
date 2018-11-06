@@ -34,5 +34,13 @@ return [
         'key' => env('STRIPE_KEY'),
         'secret' => env('STRIPE_SECRET'),
     ],
+    
+     'offscreen' => [
+        'endpoint' => env('AUTHENTICITY_ENDPOINT', 'http://wallet_api.local/api/operation')
+     ],
+    
+     'sign' => [
+        'endpoint' => env('SIGN_ENDPOINT', 'http://sign-api.local/v1/operation')
+     ]
 
 ];

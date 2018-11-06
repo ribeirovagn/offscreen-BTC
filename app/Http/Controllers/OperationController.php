@@ -7,7 +7,6 @@ use App\Enum\OperationTypeEnum;
 
 class OperationController extends Controller {
 
-    
     /**
      * Store a newly created resource in storage.
      *
@@ -18,7 +17,8 @@ class OperationController extends Controller {
 
         try {
 
-            $input = $this->_decryptRequest($request);
+            $input = $request->all();
+            $input = $this->_decryptRequest($input[0]);
 
             switch ($input['type']) {
                 case OperationTypeEnum::CREATE_ADDRESS:
@@ -26,7 +26,7 @@ class OperationController extends Controller {
                     break;
 
                 case OperationTypeEnum::FIRST_SIGN_TRANSACTION:
-                    $input['data']['scriptPubKey2'] = env('KEY');
+
                     $result = TransactionController::create($input['data']);
                     break;
 
@@ -38,34 +38,35 @@ class OperationController extends Controller {
                     $result = TransactionController::create($input['data']);
                     break;
 
+                case OperationTypeEnum::CONFIRMATION:
+                    $result = TransactionController::confirmation($input['data']['txid']);
+                    break;
+
                 default:
-                    return response(['error' => 'Invalid data...'], 422);
+                    throw new \Exception('EDI');
             }
 
             return $this->_encryptResponse($result);
         } catch (\Exception $ex) {
-            return response(['error' => $ex->getMessage()], 422);
+            return $this->_encryptResponse(['error' => $ex->getMessage()]);
         }
     }
 
-    
     /**
      * 
      * @param Request $request
      * @return type
      */
-    private function _decryptRequest(Request $request) {
-        $input = $request->all();
-        return decrypt($input[0]);
+    public function _decryptRequest($request) {
+        return decrypt($request);
     }
 
-    
     /**
      * 
      * @param Request $request
      * @return type
      */
-    private function _encryptResponse($response) {
+    public function _encryptResponse($response) {
         return encrypt($response);
     }
 

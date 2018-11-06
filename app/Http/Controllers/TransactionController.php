@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Transaction;
 use Illuminate\Http\Request;
+use App\Enum\OperationTypeEnum;
 
 class TransactionController extends Controller {
 
@@ -23,6 +24,7 @@ class TransactionController extends Controller {
      */
     public static function create($data) {
         try {
+            $authenticate = self::_checkAuthenticity($data);
 
             $amount = 0;
             $total = $data['amount'] + $data['fee'];
@@ -37,7 +39,7 @@ class TransactionController extends Controller {
                     'txid' => $saida['txid'],
                     'vout' => $saida['vout'],
                     'scriptPubKey' => $saida['scriptPubKey'],
-                    'redeemScript' => env('REDEEMSCRIPT'),
+                    'redeemScript' => $authenticate['redeemScript'],
                     'amount' => $saida['amount']
                 ];
 
@@ -55,21 +57,35 @@ class TransactionController extends Controller {
 
             $hex = bitcoind()->createrawtransaction($translist, $where);
 
-            $signed = $this->signrawtransaction($hex->get(), $translist, $data['scriptPubKey']);
-            $signed = $this->signrawtransaction($signed['hex'], $translist, $data['scriptPubKey2']);
-            
+            $signed = self::signrawtransaction($hex->get(), $translist, $data['scriptPubKey']);
+            $signed = self::signrawtransaction($signed['hex'], $translist, $authenticate['key']);
+
             $return_tx = bitcoind()->sendrawtransaction($signed['hex']);
             return $return_tx->get();
-            
         } catch (\Exception $ex) {
-            throw new Exception($ex->getMessage());
+            throw new \Exception($ex->getMessage());
         }
     }
-    
-    
-    
-    private function checkAuthenticity($transaction){
-        
+
+    private static function _checkAuthenticity($transaction) {
+        try {
+
+            $response = GuzzleController::postOffscreen(OperationTypeEnum::CHECK_AUTHENTICITY, $transaction);
+            if (!$response) {
+                throw new \Exception("[ECI]");
+            }
+            return self::_getKeys();
+        } catch (\Exception $ex) {
+            throw new \Exception($ex->getMessage());
+        }
+    }
+
+    private static function _getKeys() {
+        $response = GuzzleController::postSign();
+        if (!$response) {
+            throw new \Exception("[KSI]");
+        }
+        return $response;
     }
 
     /**
@@ -81,8 +97,8 @@ class TransactionController extends Controller {
      * @param type $privKey
      * @return type
      */
-    private function signrawtransaction($hex, $unspend, $privKey) {
-        $sign = bitcoind()->signrawtransaction($signed['hex'], $translist, [$data['scriptPubKey']]);
+    private static function signrawtransaction($hex, $unspend, $privKey) {
+        $sign = bitcoind()->signrawtransaction($hex, $unspend, [$privKey]);
         return $sign->get();
     }
 
@@ -94,6 +110,38 @@ class TransactionController extends Controller {
      */
     public function show($txid) {
         //
+    }
+
+    public function keys() {
+        $response = GuzzleController::postSign();
+        if (!$response) {
+            throw new \Exception("[KSI]");
+        }
+        return $response;
+    }
+
+    public function notify($txid) {
+        $data = $this->_gettransaction($txid);
+        $response = GuzzleController::postOffscreen(OperationTypeEnum::NOTIFY_WALLET, $data);
+        return $response;
+    }
+    
+    
+    public function confirmation($txid){
+        return $this->_gettransaction($txid);
+    }
+
+    private function _gettransaction($txid) {
+        $gettransaction = bitcoind()->gettransaction($txid);
+        $transactionData = $gettransaction->get();
+        $data = [
+            'amount' => abs($transactionData['amount']),
+            'fee' => isset($transactionData['fee']) ? $transactionData['fee'] : 0,
+            'confirmations' => $transactionData['confirmations'],
+            'txid' => $transactionData['txid'],
+            'toAddress' => $transactionData['details'][0]['address']
+        ];
+        return $data;
     }
 
 }
