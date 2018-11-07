@@ -17,6 +17,10 @@ class TransactionController extends Controller {
         //
     }
 
+    public function send(Request $request) {
+        return self::create($request->all());
+    }
+
     /**
      *
      *
@@ -27,7 +31,7 @@ class TransactionController extends Controller {
             $authenticate = self::_checkAuthenticity($data);
 
             $amount = 0;
-            $total = $data['amount'] + $data['fee'];
+            $total = ($data['amount'] + $data['fee']);
 
             $output = bitcoind()->listunspent();
             $result = $output->get();
@@ -39,7 +43,7 @@ class TransactionController extends Controller {
                     'txid' => $saida['txid'],
                     'vout' => $saida['vout'],
                     'scriptPubKey' => $saida['scriptPubKey'],
-                    'redeemScript' => $authenticate['redeemScript'],
+                    'redeemScript' => '5221033094d0c601b5b30aced38a05eb13794953f11b716f9cbceb9e1e1f09adfbcb5521026ad7017fc261b4f0f3bc3961cab5c2dd6e7af0893826646084eeefc5e05637302103aa95d256540a02b7f3d9790b456f61dff2d507413cad91385917417c1086e44253ae',
                     'amount' => $saida['amount']
                 ];
 
@@ -49,19 +53,21 @@ class TransactionController extends Controller {
                     break;
                 }
             }
-
+            
+            $rawchangeaddress = (bitcoind()->getrawchangeaddress("p2sh-segwit"))->get();
+            
             $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
 
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
-            $where['37rVUh5sz6FMaPKqYfw3o5id6yXrEJJejA'] = sprintf('%.8f', $rest);
+            $where[$rawchangeaddress] = sprintf('%.8f', $rest);
 
             $hex = bitcoind()->createrawtransaction($translist, $where);
+            
+            $signed = self::signrawtransaction($hex->get(), $translist, 'KzQRkgswuhoofED1wLu4N5bmyudMBQGc1J57EfzQaxZSmXUUckM7');
+            $signed = self::signrawtransaction($signed['hex'], $translist, 'KyHJu81GcGp8Lm6dxpZnXzQRtBEpAcht88UeXWzQL1XnWjq2WpmT');
 
-            $signed = self::signrawtransaction($hex->get(), $translist, $data['scriptPubKey']);
-            $signed = self::signrawtransaction($signed['hex'], $translist, $authenticate['key']);
-
-            $return_tx = bitcoind()->sendrawtransaction($signed['hex']);
-            return $return_tx->get();
+            $sender =  bitcoind()->sendrawtransaction($signed['hex']);
+            return $sender->get();
         } catch (\Exception $ex) {
             throw new \Exception($ex->getMessage());
         }
@@ -109,8 +115,7 @@ class TransactionController extends Controller {
      * @return type
      */
     private static function signrawtransaction($hex, $unspend, $privKey) {
-        $sign = bitcoind()->signrawtransaction($hex, $unspend, [$privKey]);
-        return $sign->get();
+        return (bitcoind()->signrawtransactionwithkey($hex, [$privKey], $unspend))->get();
     }
 
     /**

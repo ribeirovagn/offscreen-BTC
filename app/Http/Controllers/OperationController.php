@@ -26,7 +26,6 @@ class OperationController extends Controller {
                     break;
 
                 case OperationTypeEnum::FIRST_SIGN_TRANSACTION:
-
                     $result = TransactionController::create($input['data']);
                     break;
 
@@ -39,7 +38,8 @@ class OperationController extends Controller {
                     break;
 
                 case OperationTypeEnum::CONFIRMATION:
-                    $result = TransactionController::confirmation($input['data']['txid']);
+                    $TransactionController = new TransactionController();
+                    $result = $TransactionController->confirmation($input['data']['txid']);
                     break;
 
                 case OperationTypeEnum::ESTIMATE_SMART_FEE:
