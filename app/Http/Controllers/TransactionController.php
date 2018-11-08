@@ -58,7 +58,7 @@ class TransactionController extends Controller {
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
             $where[$rawchangeaddress] = sprintf('%.8f', $rest);
             $hex = bitcoind()->createrawtransaction($translist, $where);
-            bitcoind()->walletpassphrase($authenticate['walletpass'], 10);
+            bitcoind()->walletpassphrase($authenticate['key'], 10);
             $signed = (bitcoind()->signrawtransactionwithwallet($hex->get(), $translist))->get();
             $sender =  bitcoind()->sendrawtransaction($signed['hex']);
             bitcoind()->walletlock();
