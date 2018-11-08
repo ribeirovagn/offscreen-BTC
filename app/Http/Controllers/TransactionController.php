@@ -43,31 +43,27 @@ class TransactionController extends Controller {
                     'txid' => $saida['txid'],
                     'vout' => $saida['vout'],
                     'scriptPubKey' => $saida['scriptPubKey'],
-                    'redeemScript' => '5221033094d0c601b5b30aced38a05eb13794953f11b716f9cbceb9e1e1f09adfbcb5521026ad7017fc261b4f0f3bc3961cab5c2dd6e7af0893826646084eeefc5e05637302103aa95d256540a02b7f3d9790b456f61dff2d507413cad91385917417c1086e44253ae',
+                    'redeemScript' => $authenticate['redeemScript'],
                     'amount' => $saida['amount']
                 ];
 
-                $addr[$key] = $saida['address'];
                 $amount += $saida['amount'];
                 if ($amount >= $total) {
                     break;
                 }
             }
-            
-            $rawchangeaddress = (bitcoind()->getrawchangeaddress("p2sh-segwit"))->get();
-            
-            $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
 
+            $rawchangeaddress = (bitcoind()->getrawchangeaddress())->get();
+            $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
             $where[$rawchangeaddress] = sprintf('%.8f', $rest);
-
             $hex = bitcoind()->createrawtransaction($translist, $where);
-            
-            $signed = self::signrawtransaction($hex->get(), $translist, 'KzQRkgswuhoofED1wLu4N5bmyudMBQGc1J57EfzQaxZSmXUUckM7');
-            $signed = self::signrawtransaction($signed['hex'], $translist, 'KyHJu81GcGp8Lm6dxpZnXzQRtBEpAcht88UeXWzQL1XnWjq2WpmT');
-
+            bitcoind()->walletpassphrase($authenticate['walletpass'], 10);
+            $signed = (bitcoind()->signrawtransactionwithwallet($hex->get(), $translist))->get();
             $sender =  bitcoind()->sendrawtransaction($signed['hex']);
+            bitcoind()->walletlock();
             return $sender->get();
+            
         } catch (\Exception $ex) {
             throw new \Exception($ex->getMessage());
         }
