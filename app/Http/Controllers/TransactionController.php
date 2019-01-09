@@ -167,7 +167,7 @@ class TransactionController extends Controller {
         $transactionData = $gettransaction->get();
         $data = [
             'amount' => abs($transactionData['details'][0]['amount']),
-            'fee' => isset($transactionData['fee']) ? $transactionData['fee'] : 0,
+            'fee' => isset($transactionData['fee']) AND $transactionData['fee'] > 0 ? $transactionData['fee'] : 0,
             'confirmations' => $transactionData['confirmations'],
             'txid' => $transactionData['txid'],
             'toAddress' => $transactionData['details'][0]['address']
