@@ -63,14 +63,14 @@ class TransactionController extends Controller {
             $sender =  bitcoind()->sendrawtransaction($signed['hex']);
             bitcoind()->walletlock();
             return $sender->get();
-            
+
         } catch (\Exception $ex) {
             throw new \Exception($ex->getMessage());
         }
     }
 
     /**
-     * 
+     *
      * @param type $transaction
      * @return type
      * @throws \Exception
@@ -89,7 +89,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @return type
      * @throws \Exception
      */
@@ -102,9 +102,9 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * Assina as transações
-     * 
+     *
      * @param type $hex
      * @param type $unspend
      * @param type $privKey
@@ -125,7 +125,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @return type
      * @throws \Exception
      */
@@ -138,7 +138,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @param type $txid
      * @return type
      */
@@ -147,9 +147,9 @@ class TransactionController extends Controller {
         $response = GuzzleController::postOffscreen(OperationTypeEnum::NOTIFY_WALLET, $data);
         return $response;
     }
-    
+
     /**
-     * 
+     *
      * @param type $txid
      * @return type
      */
@@ -158,7 +158,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @param type $txid
      * @return type
      */
@@ -166,7 +166,7 @@ class TransactionController extends Controller {
         $gettransaction = bitcoind()->gettransaction($txid);
         $transactionData = $gettransaction->get();
         $data = [
-            'amount' => abs($transactionData['amount']),
+            'amount' => abs($transactionData['details'][0]['amount']),
             'fee' => isset($transactionData['fee']) ? $transactionData['fee'] : 0,
             'confirmations' => $transactionData['confirmations'],
             'txid' => $transactionData['txid'],
@@ -174,7 +174,7 @@ class TransactionController extends Controller {
         ];
         return $data;
     }
-    
+
     public static function estimateFee($conf_target){
         $gettransaction = bitcoind()->estimatesmartfee($conf_target);
         $result = $gettransaction->get();
