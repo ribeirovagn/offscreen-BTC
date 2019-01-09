@@ -46,6 +46,10 @@ class OperationController extends Controller {
                     $result = TransactionController::estimateFee($input['data']);
                     break;
 
+                case OperationTypeEnum::RECEIVED_TRANSACTIONS:
+                    $result = TransactionController::received();
+                    break;
+
                 default:
                     throw new \Exception('EDI');
             }
@@ -57,7 +61,7 @@ class OperationController extends Controller {
     }
 
     /**
-     * 
+     *
      * @param Request $request
      * @return type
      */
@@ -66,7 +70,7 @@ class OperationController extends Controller {
     }
 
     /**
-     * 
+     *
      * @param Request $request
      * @return type
      */

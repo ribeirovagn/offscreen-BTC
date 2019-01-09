@@ -181,4 +181,9 @@ class TransactionController extends Controller {
         return (string)$result['feerate'];
     }
 
+    public static function received(){
+        $gettransactions = bitcoind()->listreceivedbyaddress();
+        $result = $gettransactions->get();
+        return $result;
+    }
 }
