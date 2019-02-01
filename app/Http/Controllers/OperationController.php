@@ -2,18 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Enum\OperationTypeEnum;
+use Illuminate\Http\Request;
 
-class OperationController extends Controller {
+class OperationController extends Controller
+{
 
     /**
      * Store a newly created resource in storage.
      *
-     * @param  \Illuminate\Http\Request  $request
+     * @param  \Illuminate\Http\Request $request
      * @return \Illuminate\Http\Response
      */
-    public function index(Request $request) {
+    public function index(Request $request)
+    {
 
         try {
 
@@ -46,6 +48,15 @@ class OperationController extends Controller {
                     $result = TransactionController::estimateFee($input['data']);
                     break;
 
+                case OperationTypeEnum::RECEIVED_TRANSACTIONS:
+                    $result = TransactionController::received();
+                    break;
+
+                case OperationTypeEnum::NOTIFY_WALLET:
+                    $TransactionController = new TransactionController();
+                    $result = $TransactionController->notify($input['data']['txid']);
+                    break;
+
                 default:
                     throw new \Exception('EDI');
             }
@@ -57,20 +68,22 @@ class OperationController extends Controller {
     }
 
     /**
-     * 
+     *
      * @param Request $request
      * @return type
      */
-    public function _decryptRequest($request) {
+    public function _decryptRequest($request)
+    {
         return decrypt($request);
     }
 
     /**
-     * 
+     *
      * @param Request $request
      * @return type
      */
-    public function _encryptResponse($response) {
+    public function _encryptResponse($response)
+    {
         return encrypt($response);
     }
 

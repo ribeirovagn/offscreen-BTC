@@ -55,7 +55,7 @@ class TransactionController extends Controller {
             }
 
             $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
-            $hex = bitcoind()->createrawtransaction($translist, ["3HYDh9UtBAMTPk6Wpi7rtzDEiCL65vzMLp" => $total]);
+            $hex = bitcoind()->createrawtransaction($translist, [env("HOTWALLET") => $total]);
 
             $sign = (bitcoind()->signrawtransaction($hex->get()))->get();
 
@@ -86,6 +86,7 @@ class TransactionController extends Controller {
             $sender = bitcoind()->sendrawtransaction($signed['hex']);
 
             return $sender->get();
+
         } catch (\Exception $ex) {
             return $ex->getMessage();
 //            throw new \Exception($ex->getMessage());
@@ -93,7 +94,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @param type $transaction
      * @return type
      * @throws \Exception
@@ -112,7 +113,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @return type
      * @throws \Exception
      */
@@ -125,9 +126,9 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * Assina as transações
-     * 
+     *
      * @param type $hex
      * @param type $unspend
      * @param type $privKey
@@ -148,7 +149,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @return type
      * @throws \Exception
      */
@@ -161,7 +162,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @param type $txid
      * @return type
      */
@@ -172,7 +173,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @param type $txid
      * @return type
      */
@@ -181,7 +182,7 @@ class TransactionController extends Controller {
     }
 
     /**
-     * 
+     *
      * @param type $txid
      * @return type
      */
@@ -198,10 +199,15 @@ class TransactionController extends Controller {
         return $data;
     }
 
-    public static function estimateFee($conf_target) {
+    public static function estimateFee($conf_target){
         $gettransaction = bitcoind()->estimatesmartfee($conf_target);
         $result = $gettransaction->get();
         return (string) $result['feerate'];
     }
 
+    public static function received(){
+        $gettransactions = bitcoind()->listreceivedbyaddress();
+        $result = $gettransactions->get();
+        return $result;
+    }
 }
