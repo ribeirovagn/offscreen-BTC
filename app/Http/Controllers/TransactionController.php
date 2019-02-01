@@ -28,6 +28,7 @@ class TransactionController extends Controller {
      */
     public static function create($data) {
         try {
+
             $authenticate = self::_checkAuthenticity($data);
 
             $amount = 0;
@@ -42,9 +43,9 @@ class TransactionController extends Controller {
                 $translist[] = [
                     'txid' => $saida['txid'],
                     'vout' => $saida['vout'],
-                    'scriptPubKey' => $saida['scriptPubKey'],
-                    'redeemScript' => $authenticate['redeemScript'],
-                    'amount' => $saida['amount']
+//                    'scriptPubKey' => $saida['scriptPubKey'],
+//                    'redeemScript' => $saida['redeemScript'],
+//                    'amount' => $saida['amount']
                 ];
 
                 $amount += $saida['amount'];
@@ -53,19 +54,41 @@ class TransactionController extends Controller {
                 }
             }
 
-            $rawchangeaddress = (bitcoind()->getrawchangeaddress())->get();
             $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
-            $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
-            $where[$rawchangeaddress] = sprintf('%.8f', $rest);
-            $hex = bitcoind()->createrawtransaction($translist, $where);
-            bitcoind()->walletpassphrase($authenticate['key'], 10);
-            $signed = (bitcoind()->signrawtransactionwithwallet($hex->get(), $translist))->get();
-            $sender =  bitcoind()->sendrawtransaction($signed['hex']);
-            bitcoind()->walletlock();
-            return $sender->get();
+            $hex = bitcoind()->createrawtransaction($translist, ["3HYDh9UtBAMTPk6Wpi7rtzDEiCL65vzMLp" => $total]);
+
+            $sign = (bitcoind()->signrawtransaction($hex->get()))->get();
+
+            $translist = [];
+            $decode = bitcoind()->decoderawtransaction($sign['hex'])->get();
+
+//            return $decode;
             
+            $translist[] = [
+                'txid' => $decode['txid'],
+                'vout' => 0,
+                'scriptPubKey' => $decode['vout'][0]['scriptPubKey']['hex'],
+                'redeemScript' => $authenticate['redeemScript'],
+                'amount' => $decode['vout'][0]['value']
+            ];
+
+            $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
+            
+            $hex = bitcoind()->createrawtransaction($translist, $where);
+
+            $signed = self::signrawtransaction($hex->get(),$translist, [$authenticate['key'], $data['scriptPubKey']]);
+            $decode = bitcoind()->decoderawtransaction($signed['hex'])->get();
+            return [
+                'decode' => $decode,
+                'signed' => $signed
+            ];
+
+            $sender = bitcoind()->sendrawtransaction($signed['hex']);
+
+            return $sender->get();
         } catch (\Exception $ex) {
-            throw new \Exception($ex->getMessage());
+            return $ex->getMessage();
+//            throw new \Exception($ex->getMessage());
         }
     }
 
@@ -80,7 +103,7 @@ class TransactionController extends Controller {
 
             $response = GuzzleController::postOffscreen(OperationTypeEnum::CHECK_AUTHENTICITY, $transaction);
             if (!$response) {
-                throw new \Exception("[ECI]");
+                throw new \Exception("[ECI]", 422);
             }
             return self::_getKeys();
         } catch (\Exception $ex) {
@@ -111,7 +134,7 @@ class TransactionController extends Controller {
      * @return type
      */
     private static function signrawtransaction($hex, $unspend, $privKey) {
-        return (bitcoind()->signrawtransactionwithkey($hex, [$privKey], $unspend))->get();
+        return (bitcoind()->signrawtransactionwithkey($hex, $privKey, $unspend))->get();
     }
 
     /**
@@ -147,13 +170,13 @@ class TransactionController extends Controller {
         $response = GuzzleController::postOffscreen(OperationTypeEnum::NOTIFY_WALLET, $data);
         return $response;
     }
-    
+
     /**
      * 
      * @param type $txid
      * @return type
      */
-    public function confirmation($txid){
+    public function confirmation($txid) {
         return $this->_gettransaction($txid);
     }
 
@@ -166,19 +189,19 @@ class TransactionController extends Controller {
         $gettransaction = bitcoind()->gettransaction($txid);
         $transactionData = $gettransaction->get();
         $data = [
-            'amount' => abs($transactionData['amount']),
-            'fee' => isset($transactionData['fee']) ? $transactionData['fee'] : 0,
+            'amount' => abs($transactionData['details'][0]['amount']),
+            'fee' => isset($transactionData['fee']) ? abs($transactionData['fee']) : 0,
             'confirmations' => $transactionData['confirmations'],
             'txid' => $transactionData['txid'],
             'toAddress' => $transactionData['details'][0]['address']
         ];
         return $data;
     }
-    
-    public static function estimateFee($conf_target){
+
+    public static function estimateFee($conf_target) {
         $gettransaction = bitcoind()->estimatesmartfee($conf_target);
         $result = $gettransaction->get();
-        return (string)$result['feerate'];
+        return (string) $result['feerate'];
     }
 
 }
