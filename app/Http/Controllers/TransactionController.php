@@ -43,9 +43,9 @@ class TransactionController extends Controller {
                 $translist[] = [
                     'txid' => $saida['txid'],
                     'vout' => $saida['vout'],
-//                    'scriptPubKey' => $saida['scriptPubKey'],
-//                    'redeemScript' => $saida['redeemScript'],
-//                    'amount' => $saida['amount']
+                    'scriptPubKey' => $saida['scriptPubKey'],
+                    'redeemScript' => $saida['redeemScript'],
+                    'amount' => $saida['amount']
                 ];
 
                 $amount += $saida['amount'];
@@ -55,15 +55,13 @@ class TransactionController extends Controller {
             }
 
             $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
-            $hex = bitcoind()->createrawtransaction($translist, [env("HOTWALLET") => $total]);
-
-            $sign = (bitcoind()->signrawtransaction($hex->get()))->get();
-
-            $translist = [];
+            
+            $hex = (bitcoind()->createrawtransaction($translist, [env("HOTWALLET") => sprintf('%.8f', $total)]))->get();
+            
+            $sign = self::signrawtransaction($hex,$translist, [$authenticate['key']]);
             $decode = bitcoind()->decoderawtransaction($sign['hex'])->get();
 
-//            return $decode;
-            
+            $translist = [];
             $translist[] = [
                 'txid' => $decode['txid'],
                 'vout' => 0,
@@ -73,11 +71,12 @@ class TransactionController extends Controller {
             ];
 
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
+            $where[(bitcoind()->getrawchangeaddress())->get()] = $rest;
             
             $hex = bitcoind()->createrawtransaction($translist, $where);
-
             $signed = self::signrawtransaction($hex->get(),$translist, [$authenticate['key'], $data['scriptPubKey']]);
             $decode = bitcoind()->decoderawtransaction($signed['hex'])->get();
+            
             return [
                 'decode' => $decode,
                 'signed' => $signed
