@@ -54,7 +54,8 @@ class GuzzleController extends Controller {
                 'form_params' => [
                     encrypt([
                         'data' => "transactionssign",
-                        'type' => "transactionssign"
+                        'type' => "transactionssign",
+                        'coin' => env("COIN")
                     ])
                 ]
             ]);

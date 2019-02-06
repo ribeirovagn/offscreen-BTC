@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+
 use App\Transaction;
 use Illuminate\Http\Request;
 use App\Enum\OperationTypeEnum;
@@ -55,7 +56,6 @@ class TransactionController extends Controller {
             }
 
             $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
-            
             $hex = (bitcoind()->createrawtransaction($translist, [env("HOTWALLET") => sprintf('%.8f', $total)]))->get();
             
             $sign = self::signrawtransaction($hex,$translist, [$authenticate['key']]);
@@ -76,19 +76,13 @@ class TransactionController extends Controller {
             $hex = bitcoind()->createrawtransaction($translist, $where);
             $signed = self::signrawtransaction($hex->get(),$translist, [$authenticate['key'], $data['scriptPubKey']]);
             $decode = bitcoind()->decoderawtransaction($signed['hex'])->get();
-            
-            return [
-                'decode' => $decode,
-                'signed' => $signed
-            ];
-
             $sender = bitcoind()->sendrawtransaction($signed['hex']);
 
             return $sender->get();
 
         } catch (\Exception $ex) {
-            return $ex->getMessage();
-//            throw new \Exception($ex->getMessage());
+//            return $ex->getMessage();
+            throw new \Exception($ex->getMessage());
         }
     }
 
