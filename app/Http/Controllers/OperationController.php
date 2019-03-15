@@ -24,7 +24,7 @@ class OperationController extends Controller
 
             switch ($input['type']) {
                 case OperationTypeEnum::CREATE_ADDRESS:
-                    $result = AddressController::index();
+                    $result = AddressController::create();
                     break;
 
                 case OperationTypeEnum::FIRST_SIGN_TRANSACTION:
@@ -55,6 +55,16 @@ class OperationController extends Controller
                 case OperationTypeEnum::NOTIFY_WALLET:
                     $TransactionController = new TransactionController();
                     $result = $TransactionController->notify($input['data']['txid']);
+                    break;
+
+                case OperationTypeEnum::DECREMENT_BALANCE:
+                    $TransactionController = new TransactionController();
+                    $result = BalanceController::_decrement($input['address']['amount']);
+                    break;
+
+                case OperationTypeEnum::INCREMENT_BALANCE:
+                    $TransactionController = new TransactionController();
+                    $result = BalanceController::_increment($input['address']['amount']);
                     break;
 
                 default:

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Address;
 use Illuminate\Http\Request;
+use App\Balance;
 
 class AddressController extends Controller {
 
@@ -12,17 +13,23 @@ class AddressController extends Controller {
      *
      * @return \Illuminate\Http\Response
      */
-    public static function index() {
+    public static function create() {
         try {
             
             $bitcoind = bitcoind()->getNewAddress();
-            $address = json_decode($bitcoind->getBody());
+            $address = json_decode($bitcoind->getBody()); 
+            $operationController = new OperationController();
             
+            $walletModel = Address::create([
+                'wallet' => $address->result,
+                'balance' => $operationController->_encryptResponse('0.00000000')
+            ]);
+           
             return $address->result;
             
         } catch (\Exception $ex) {
             
-            throw new Exception($ex->getMessage());
+            throw new \Exception($ex->getMessage());
         }
     }
     
@@ -41,7 +48,6 @@ class AddressController extends Controller {
             return $address->result;
             
         } catch (\Exception $ex) {
-            
             throw new Exception($ex->getMessage());
         }
     }

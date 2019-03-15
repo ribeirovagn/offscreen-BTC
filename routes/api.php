@@ -8,6 +8,9 @@ Route::group(['prefix' => 'v1'], function() {
     
     if (env('APP_ENV') === 'local') {
         Route::post('send', 'TransactionController@send');
+        Route::post('newaddress', 'AddressController@create');
+        Route::get('balance/{address}', 'BalanceController@show');
+        Route::post('increment', 'BalanceController@increment');
+        Route::post('decrement', 'BalanceController@decrement');
     }
 });
-
