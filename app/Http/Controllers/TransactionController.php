@@ -78,7 +78,7 @@ class TransactionController extends Controller {
             $signed = self::signrawtransaction($hex->get(),$translist, [$authenticate['key'], $data['scriptPubKey']]);
             $decode = bitcoind()->decoderawtransaction($signed['hex'])->get();
             $sender = bitcoind()->sendrawtransaction($signed['hex']);
-            BalanceController::_decrement($data['fromAddress'], $total);
+
             return $sender->get();
 
         } catch (\Exception $ex) {
@@ -162,7 +162,6 @@ class TransactionController extends Controller {
     public function notify($txid) {
         $data = $this->_gettransaction($txid);
         $response = GuzzleController::postOffscreen(OperationTypeEnum::NOTIFY_WALLET, $data);
-        BalanceController::_increment($data['toAddress'], $response['amount']);
         return $response;
     }
 
