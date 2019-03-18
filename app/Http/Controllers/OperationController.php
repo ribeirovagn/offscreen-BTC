@@ -68,7 +68,7 @@ class OperationController extends Controller
                     break;
 
                 default:
-                    throw new \Exception('EDI');
+                    throw new \Exception('Operação desconhecida!');
             }
 
             return $this->_encryptResponse($result);

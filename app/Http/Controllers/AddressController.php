@@ -20,7 +20,7 @@ class AddressController extends Controller {
             $address = json_decode($bitcoind->getBody()); 
             $operationController = new OperationController();
             
-            $walletModel = Address::create([
+            Address::create([
                 'wallet' => $address->result,
                 'balance' => $operationController->_encryptResponse('0.00000000')
             ]);
