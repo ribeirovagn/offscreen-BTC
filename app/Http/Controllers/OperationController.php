@@ -59,12 +59,12 @@ class OperationController extends Controller
 
                 case OperationTypeEnum::DECREMENT_BALANCE:
                     $TransactionController = new TransactionController();
-                    $result = BalanceController::_decrement($input['address'], $input['amount']);
+                    $result = BalanceController::_decrement($input['data']['address'], $input['data']['amount']);
                     break;
 
                 case OperationTypeEnum::INCREMENT_BALANCE:
                     $TransactionController = new TransactionController();
-                    $result = BalanceController::_increment($input['address'], $input['amount']);
+                    $result = BalanceController::_increment($input['data']['address'], $input['data']['amount']);
                     break;
 
                 default:
