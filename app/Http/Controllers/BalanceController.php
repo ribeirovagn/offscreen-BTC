@@ -55,7 +55,7 @@ class BalanceController extends Controller
             return true;
         }
         
-        throw new \Exception("Saldos diferentes!!!");
+        throw new \Exception("155");
     }
     
     
