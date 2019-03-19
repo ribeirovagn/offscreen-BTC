@@ -7,12 +7,12 @@ use App\Address;
 
 class BalanceController extends Controller
 {
-    
+
     /**
-     * 
+     *
      * Recupera o balance do core
-     * @return type
-     * @throws Exception
+     * @return mixed
+     * @throws \Exception
      */
     public static function getBalance(){
         try {
@@ -20,15 +20,16 @@ class BalanceController extends Controller
             $address = json_decode($bitcoind->getBody());
             return $address->result;
         } catch (\Exception $ex) {
-            throw new Exception($ex->getMessage());
+            throw new \Exception($ex->getMessage());
         }        
     }
-    
+
     /**
-     * 
-     * Recupera o balance de um usuário 
-     * @param type $address
-     * @return type
+     *
+     * Recupera o balance de um usuário
+     * @param mixed $address
+     * @return mixed
+     * @throws \Exception
      */
     public static function show($address){
         $operationController = new OperationController();
@@ -44,14 +45,14 @@ class BalanceController extends Controller
     
     /**
      * 
-     * @param type $address
-     * @param type $amount
+     * @param mixed $address
+     * @param mixed $amount
      * @return boolean
      * @throws \Exception
      */
     public static function check($address, $amount){
         $balance = self::show($address);
-        if($balance->balance === $amount){
+        if(sprintf("%.8f", $balance->balance) === sprintf("%.8f", $amount)){
             return true;
         }
         
@@ -66,12 +67,13 @@ class BalanceController extends Controller
     public function decrement(Request $request){
         return self::_decrement($request->address, $request->amount);
     }
-    
-    
+
+
     /**
-     * 
-     * @param type $address
-     * @param type $amount
+     *
+     * @param mixed $address
+     * @param mixed $amount
+     * @throws \Exception
      */
     public static function _increment($address, $amount){
         $operationController = new OperationController();
@@ -83,11 +85,12 @@ class BalanceController extends Controller
         $balance->update();
         
     }
-    
+
     /**
-     * 
-     * @param type $address
-     * @param type $amount
+     *
+     * @param mixed $address
+     * @param mixed $amount
+     * @throws \Exception
      */
     public static function _decrement($address, $amount){
         $operationController = new OperationController();
