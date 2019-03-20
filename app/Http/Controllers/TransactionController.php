@@ -47,7 +47,7 @@ class TransactionController extends Controller {
                     'vout' => $saida['vout'],
                     'scriptPubKey' => $saida['scriptPubKey'],
                     'redeemScript' => $saida['redeemScript'],
-                    'amount' => $saida['amount']
+                    'amount' => (string) $saida['amount']
                 ];
 
                 $amount += $saida['amount'];
@@ -68,11 +68,11 @@ class TransactionController extends Controller {
                 'vout' => 0,
                 'scriptPubKey' => $decode['vout'][0]['scriptPubKey']['hex'],
                 'redeemScript' => $authenticate['redeemScript'],
-                'amount' => $decode['vout'][0]['value']
+                'amount' => (string) $decode['vout'][0]['value']
             ];
 
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
-            $where[(bitcoind()->getrawchangeaddress())->get()] = $rest;
+            $where[(bitcoind()->getrawchangeaddress())->get()] = (string) $rest;
             
             $hex = bitcoind()->createrawtransaction($translist, $where);
             $signed = self::signrawtransaction($hex->get(),$translist, [$authenticate['key'], $data['scriptPubKey']]);
@@ -116,6 +116,11 @@ class TransactionController extends Controller {
             throw new \Exception("[KSI]");
         }
         return $response;
+    }
+    
+    
+    public function getKeys(){
+        return self::_getKeys();
     }
 
     /**
