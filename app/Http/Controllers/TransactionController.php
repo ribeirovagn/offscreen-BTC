@@ -45,8 +45,8 @@ class TransactionController extends Controller {
                     'txid' => $saida['txid'],
                     'vout' => $saida['vout'],
                     'scriptPubKey' => $saida['scriptPubKey'],
-                    'redeemScript' => $saida['redeemScript'],
-                    'amount' => (string) $saida['amount']
+//                    'redeemScript' => $saida['redeemScript'],
+//                    'amount' => (string) $saida['amount']
                 ];
 
                 $amount += $saida['amount'];
@@ -62,12 +62,7 @@ class TransactionController extends Controller {
 //            $hex = (bitcoind()->createrawtransaction($translist, [env("HOTWALLET") => sprintf('%.8f', $total)]))->get();
             $hex = (bitcoind()->createrawtransaction($translist, $where))->get();
 
-
-            $sender = bitcoind()->sendrawtransaction($hex->get());
-            return $sender->get();
-
-
-
+            return (bitcoind()->sendrawtransaction($hex))->get();
 
 
 
