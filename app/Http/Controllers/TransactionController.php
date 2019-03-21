@@ -63,7 +63,7 @@ class TransactionController extends Controller {
             $hex = (bitcoind()->createrawtransaction($translist, $where))->get();
 
 
-            $sender = bitcoind()->sendrawtransaction($signed['hex']);
+            $sender = bitcoind()->sendrawtransaction($hex->get());
             return $sender->get();
 
 
