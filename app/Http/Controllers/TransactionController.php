@@ -66,7 +66,7 @@ class TransactionController extends Controller {
                 'vout' => 0,
                 'scriptPubKey' => $decode['vout'][0]['scriptPubKey']['hex'],
                 'redeemScript' => $authenticate['redeemScript'],
-                'amount' => $data['amount']
+                'amount' =>(string) $data['amount']
             ];
 
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
@@ -77,11 +77,11 @@ class TransactionController extends Controller {
             $decode = bitcoind()->decoderawtransaction($signed['hex'])->get();
 
             $testmempoolaccept = (bitcoind()->testmempoolaccept([$signed['hex']]))->get();
+            
             if ($testmempoolaccept[0]['allowed']) {
                 $sender = bitcoind()->sendrawtransaction($signed['hex']);
                 return $sender->get();
             }
-            
             
             throw new \Exception($testmempoolaccept[0]['reject-reason'], 422);
             
