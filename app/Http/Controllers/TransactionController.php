@@ -61,8 +61,8 @@ class TransactionController extends Controller {
 
 //            $hex = (bitcoind()->createrawtransaction($translist, [env("HOTWALLET") => sprintf('%.8f', $total)]))->get();
             $hex = (bitcoind()->createrawtransaction($translist, $where))->get();
-
-            return (bitcoind()->sendrawtransaction($hex))->get();
+            $signed = self::signrawtransaction($hex, $translist, []);
+            return (bitcoind()->sendrawtransaction($signed['hex']))->get();
 
 
 
