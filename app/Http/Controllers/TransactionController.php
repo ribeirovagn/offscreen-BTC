@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-
 use App\Transaction;
 use Illuminate\Http\Request;
 use App\Enum\OperationTypeEnum;
@@ -32,7 +31,7 @@ class TransactionController extends Controller {
             BalanceController::check($data['fromAddress'], $data['balance']);
 
             $authenticate = self::_checkAuthenticity($data);
-            
+
             $amount = 0;
             $total = ($data['amount'] + $data['fee']);
 
@@ -58,29 +57,34 @@ class TransactionController extends Controller {
 
             $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
             $hex = (bitcoind()->createrawtransaction($translist, [env("HOTWALLET") => sprintf('%.8f', $total)]))->get();
-            
-            $sign = self::signrawtransaction($hex,$translist, [$authenticate['key']]);
-            $decode = bitcoind()->decoderawtransaction($sign['hex'])->get();
 
+            $sign = self::signrawtransaction($hex, $translist, [$authenticate['key']]);
+            $decode = bitcoind()->decoderawtransaction($sign['hex'])->get();
             $translist = [];
             $translist[] = [
                 'txid' => $decode['txid'],
                 'vout' => 0,
                 'scriptPubKey' => $decode['vout'][0]['scriptPubKey']['hex'],
                 'redeemScript' => $authenticate['redeemScript'],
-                'amount' => (string) $decode['vout'][0]['value']
+                'amount' => $data['amount']
             ];
 
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
             $where[(bitcoind()->getrawchangeaddress())->get()] = (string) $rest;
-            
+
             $hex = bitcoind()->createrawtransaction($translist, $where);
-            $signed = self::signrawtransaction($hex->get(),$translist, [$authenticate['key'], $data['scriptPubKey']]);
+            $signed = self::signrawtransaction($hex->get(), $translist, [$authenticate['key'], $data['scriptPubKey']]);
             $decode = bitcoind()->decoderawtransaction($signed['hex'])->get();
-            $sender = bitcoind()->sendrawtransaction($signed['hex']);
 
-            return $sender->get();
-
+            $testmempoolaccept = (bitcoind()->testmempoolaccept([$signed['hex']]))->get();
+            if ($testmempoolaccept[0]['allowed']) {
+                $sender = bitcoind()->sendrawtransaction($signed['hex']);
+                return $sender->get();
+            }
+            
+            
+            throw new \Exception($testmempoolaccept[0]['reject-reason'], 422);
+            
         } catch (\Exception $ex) {
             throw new \Exception($ex->getMessage());
         }
@@ -117,9 +121,8 @@ class TransactionController extends Controller {
         }
         return $response;
     }
-    
-    
-    public function getKeys(){
+
+    public function getKeys() {
         return self::_getKeys();
     }
 
@@ -133,7 +136,7 @@ class TransactionController extends Controller {
      * @return type
      */
     private static function signrawtransaction($hex, $unspend, $privKey) {
-        return (bitcoind()->signrawtransactionwithkey($hex, $privKey, $unspend))->get();
+        return (bitcoind()->signrawtransaction($hex, $unspend, $privKey))->get();
     }
 
     /**
@@ -197,15 +200,16 @@ class TransactionController extends Controller {
         return $data;
     }
 
-    public static function estimateFee($conf_target){
+    public static function estimateFee($conf_target) {
         $gettransaction = bitcoind()->estimatesmartfee($conf_target);
         $result = $gettransaction->get();
         return (string) $result['feerate'];
     }
 
-    public static function received(){
+    public static function received() {
         $gettransactions = bitcoind()->listreceivedbyaddress();
         $result = $gettransactions->get();
         return $result;
     }
+
 }
