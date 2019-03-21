@@ -46,7 +46,7 @@ class TransactionController extends Controller {
                     'vout' => $saida['vout'],
                     'scriptPubKey' => $saida['scriptPubKey'],
                     'redeemScript' => $saida['redeemScript'],
-//                    'amount' => (string) $saida['amount']
+                    'amount' => (string) $saida['amount']
                 ];
 
                 $amount += $saida['amount'];
