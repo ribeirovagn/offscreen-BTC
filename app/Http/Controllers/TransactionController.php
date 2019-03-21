@@ -143,7 +143,7 @@ class TransactionController extends Controller {
      * @return type
      */
     private static function signrawtransaction($hex, $unspend, $privKey) {
-        return (bitcoind()->signrawtransaction($hex, $unspend, $privKey))->get();
+        return (bitcoind()->signrawtransactionwithkey($hex, $privKey, $unspend))->get();
     }
 
     /**
