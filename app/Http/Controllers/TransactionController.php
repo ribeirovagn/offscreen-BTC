@@ -21,6 +21,10 @@ class TransactionController extends Controller {
         return self::create($request->all());
     }
 
+    public function sendPsbt(Request $request) {
+        return self::createPsbt($request->all());
+    }
+
     /**
      *
      *
@@ -34,66 +38,104 @@ class TransactionController extends Controller {
 
             $amount = 0;
             $total = ($data['amount'] + $data['fee']);
-
-            $output = bitcoind()->listunspent();
+            $output = bitcoind()->listunspent(1, 99, [env('HOTWALLET')]);
             $result = $output->get();
 
             $translist = [];
 
             foreach ($result as $key => $saida) {
-                $translist[] = [
-                    'txid' => $saida['txid'],
-                    'vout' => $saida['vout'],
-                    'scriptPubKey' => $saida['scriptPubKey'],
-                    'redeemScript' => $saida['redeemScript'],
-                    'amount' => (string) $saida['amount']
-                ];
+                if ($saida['spendable']) {
+                    $translist[] = [
+                        'txid' => $saida['txid'],
+                        'vout' => $saida['vout'],
+                        'scriptPubKey' => $saida['scriptPubKey'],
+                        'redeemScript' => $saida['redeemScript'],
+                        'amount' => (string) $saida['amount']
+                    ];
 
-                $amount += $saida['amount'];
-                if ($amount >= $total) {
-                    break;
+                    $amount += $saida['amount'];
+                    if ($amount >= $total) {
+                        break;
+                    }
                 }
             }
 
             $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
-            $where[(bitcoind()->getrawchangeaddress())->get()] = (string) $rest;
+            $where[env('HOTWALLET')] = (string) $rest;
 
-//            $hex = (bitcoind()->createrawtransaction($translist, [env("HOTWALLET") => sprintf('%.8f', $total)]))->get();
             $hex = (bitcoind()->createrawtransaction($translist, $where))->get();
-//            $signed = self::signrawtransaction($hex, $translist, []);
-            return (bitcoind()->sendrawtransaction($hex))->get();
-
-
-
-
-            $sign = self::signrawtransaction($hex, $translist, [$authenticate['key']]);
-            $decode = bitcoind()->decoderawtransaction($sign['hex'])->get();
-            $translist = [];
-            $translist[] = [
-                'txid' => $decode['txid'],
-                'vout' => 0,
-                'scriptPubKey' => $decode['vout'][0]['scriptPubKey']['hex'],
-                'redeemScript' => $authenticate['redeemScript'],
-                'amount' => (string) $data['amount']
-            ];
-
-
-
-            $hex = bitcoind()->createrawtransaction($translist, $where);
-            $signed = self::signrawtransaction($hex->get(), $translist, [$authenticate['key'], $data['scriptPubKey']]);
-            $decode = bitcoind()->decoderawtransaction($signed['hex'])->get();
-
-            $testmempoolaccept = (bitcoind()->testmempoolaccept([$signed['hex']]))->get();
+            $sign = (bitcoind()->signrawtransactionwithkey($hex, [$authenticate['key'], $data['scriptPubKey']], $translist))->get();
+            $testmempoolaccept = (bitcoind()->testmempoolaccept([$sign['hex']]))->get();
 
             if ($testmempoolaccept[0]['allowed']) {
-                $sender = bitcoind()->sendrawtransaction($signed['hex']);
+                $sender = bitcoind()->sendrawtransaction($sign['hex']);
                 return $sender->get();
             }
 
             throw new \Exception($testmempoolaccept[0]['reject-reason'], 422);
         } catch (\Exception $ex) {
             throw new \Exception($ex->getMessage());
+        }
+    }
+
+    public static function createPsbt($data) {
+        try {
+
+//            BalanceController::check($data['send'], $data['balance']);
+
+            $authenticate = self::_checkAuthenticity($data);
+
+            $amount = 0;
+            $total = ($data['amount'] + $data['fee']);
+            $output = bitcoind()->wallet('psbt1')->listunspent(1, 99, [env('HOTWALLET')]);
+            $result = $output->get();
+
+            $translist = [];
+
+            foreach ($result as $key => $saida) {
+                if (!$saida['spendable']) {
+                    $translist[] = [
+                        'txid' => $saida['txid'],
+                        'vout' => $saida['vout'],
+                        'scriptPubKey' => $saida['scriptPubKey'],
+                        'redeemScript' => $saida['redeemScript'],
+                        'amount' => (string) $saida['amount']
+                    ];
+
+                    $amount += $saida['amount'];
+                    if ($amount >= $total) {
+                        break;
+                    }
+                }
+            }
+//            return $translist;
+
+            $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
+            $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
+            $where[env('HOTWALLET')] = (string) $rest;
+
+            $hex = (bitcoind()->wallet('psbt1')->createrawtransaction($translist, $where))->get();
+            $hex = (bitcoind()->wallet('psbt1')->converttopsbt($hex))->get();
+            
+            bitcoind()->wallet("psbt2")->walletpassphrase("zaq12wsx", 1);
+            $psbt1 = (bitcoind()->wallet("psbt2")->walletprocesspsbt($hex))->get();
+            bitcoind()->wallet("psbt3")->walletpassphrase("zaq12wsx", 1);
+            $psbt2 = (bitcoind()->wallet("psbt3")->walletprocesspsbt($psbt1['psbt']))->get();
+            
+            $final = (bitcoind()->wallet("psbt1")->finalizepsbt($psbt2['psbt']))->get();
+            
+            $testmempoolaccept = (bitcoind()->testmempoolaccept([$final['hex']]))->get();
+
+            if ($testmempoolaccept[0]['allowed']) {
+                $sender = bitcoind()->sendrawtransaction($final['hex']);
+                return $sender->get();
+            }
+
+            throw new \Exception($testmempoolaccept[0]['reject-reason'], 422);            
+        
+        } catch (\Exception $exc) {
+            throw new \Exception($exc->getMessage());
         }
     }
 
@@ -108,7 +150,7 @@ class TransactionController extends Controller {
 
             $response = GuzzleController::postOffscreen(OperationTypeEnum::CHECK_AUTHENTICITY, $transaction);
             if (!$response) {
-                throw new \Exception("[ECI]", 422);
+//                throw new \Exception("[ECI]", 422);
             }
             return self::_getKeys();
         } catch (\Exception $ex) {

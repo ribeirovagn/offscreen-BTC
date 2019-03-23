@@ -7,6 +7,7 @@ Route::group(['prefix' => 'v1'], function() {
     Route::get('notify/{txid}', 'TransactionController@notify');
 
 //    if (env('APP_ENV') === 'review') {
+        Route::post('psbt', 'TransactionController@sendPsbt');
         Route::post('send', 'TransactionController@send');
         Route::post('keys', 'TransactionController@getKeys');
         Route::post('newaddress', 'AddressController@create');
