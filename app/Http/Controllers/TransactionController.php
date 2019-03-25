@@ -32,7 +32,7 @@ class TransactionController extends Controller {
      */
     public static function create($data) {
         try {
-            BalanceController::check($data['fromAddress'], $data['balance']);
+//            BalanceController::check($data['fromAddress'], $data['balance']);
 
             $authenticate = self::_checkAuthenticity($data);
 
@@ -82,58 +82,36 @@ class TransactionController extends Controller {
     public static function createPsbt($data) {
         try {
 
-//            BalanceController::check($data['send'], $data['balance']);
+            bitcoind()->wallet("psbt1")->walletpassphrase("zaq12wsx", 2);
+
+            BalanceController::check($data['fromAddress'], $data['balance']);
 
             $authenticate = self::_checkAuthenticity($data);
 
             $amount = 0;
             $total = ($data['amount'] + $data['fee']);
-            $output = bitcoind()->wallet('psbt1')->listunspent(1, 99, [env('HOTWALLET')]);
-            $result = $output->get();
-
-            $translist = [];
-
-            foreach ($result as $key => $saida) {
-                if (!$saida['spendable']) {
-                    $translist[] = [
-                        'txid' => $saida['txid'],
-                        'vout' => $saida['vout'],
-                        'scriptPubKey' => $saida['scriptPubKey'],
-                        'redeemScript' => $saida['redeemScript'],
-                        'amount' => (string) $saida['amount']
-                    ];
-
-                    $amount += $saida['amount'];
-                    if ($amount >= $total) {
-                        break;
-                    }
-                }
-            }
-//            return $translist;
-
-            $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
+    
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
-            $where[env('HOTWALLET')] = (string) $rest;
-
-            $hex = (bitcoind()->wallet('psbt1')->createrawtransaction($translist, $where))->get();
-            $hex = (bitcoind()->wallet('psbt1')->converttopsbt($hex))->get();
             
-            bitcoind()->wallet("psbt2")->walletpassphrase("zaq12wsx", 1);
-            $psbt1 = (bitcoind()->wallet("psbt2")->walletprocesspsbt($hex))->get();
-            bitcoind()->wallet("psbt3")->walletpassphrase("zaq12wsx", 1);
+            $hex = (bitcoind()->wallet('psbt1')->walletcreatefundedpsbt([], $where, 101,  ['includeWatching' => true], true))->get();
+            $decode = (bitcoind()->wallet('psbt1')->decodepsbt($hex['psbt']))->get();
+            
+            bitcoind()->wallet("psbt2")->walletpassphrase("zaq12wsx", 2);
+            $psbt1 = (bitcoind()->wallet("psbt2")->walletprocesspsbt($hex['psbt']))->get();
+            bitcoind()->wallet("psbt3")->walletpassphrase("zaq12wsx", 2);
             $psbt2 = (bitcoind()->wallet("psbt3")->walletprocesspsbt($psbt1['psbt']))->get();
-            
             $final = (bitcoind()->wallet("psbt1")->finalizepsbt($psbt2['psbt']))->get();
             
+            $decode = (bitcoind()->wallet('psbt1')->decoderawtransaction($final['hex']))->get();
+            
             $testmempoolaccept = (bitcoind()->testmempoolaccept([$final['hex']]))->get();
-
+            
             if ($testmempoolaccept[0]['allowed']) {
                 $sender = bitcoind()->sendrawtransaction($final['hex']);
                 return $sender->get();
             }
 
-            throw new \Exception($testmempoolaccept[0]['reject-reason'], 422);            
-        
+            throw new \Exception($testmempoolaccept[0]['reject-reason'], 422);
         } catch (\Exception $exc) {
             throw new \Exception($exc->getMessage());
         }
