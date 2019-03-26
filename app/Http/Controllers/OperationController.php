@@ -36,7 +36,7 @@ class OperationController extends Controller
                     break;
 
                 case OperationTypeEnum::SECOND_SIGN_TRANSACTION:
-                    $result = TransactionController::create($input['data']);
+                    $result = TransactionController::createPsbt($input['data']);
                     break;
 
                 case OperationTypeEnum::CONFIRMATION:

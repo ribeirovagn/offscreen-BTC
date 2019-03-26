@@ -16,7 +16,7 @@ class BalanceController extends Controller
      */
     public static function getBalance(){
         try {
-            $bitcoind = bitcoind()->getBalance();
+            $bitcoind = bitcoind()->wallet(env('WALLET_MAIN'))->getBalance();
             $address = json_decode($bitcoind->getBody());
             return $address->result;
         } catch (\Exception $ex) {

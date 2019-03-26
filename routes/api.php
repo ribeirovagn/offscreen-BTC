@@ -9,6 +9,7 @@ Route::group(['prefix' => 'v1'], function() {
 //    if (env('APP_ENV') === 'review') {
         Route::post('psbt', 'TransactionController@sendPsbt');
         Route::post('send', 'TransactionController@send');
+        Route::post('listlockunspent', 'TransactionController@listlockunspent');
         Route::post('keys', 'TransactionController@getKeys');
         Route::post('newaddress', 'AddressController@create');
         Route::get('balance/{address}', 'BalanceController@show');
