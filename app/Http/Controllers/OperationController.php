@@ -28,7 +28,7 @@ class OperationController extends Controller
                     break;
 
                 case OperationTypeEnum::FIRST_SIGN_TRANSACTION:
-                    $result = TransactionController::create($input['data']);
+                    $result = TransactionController::createPsbt($input['data']);
                     break;
 
                 case OperationTypeEnum::GET_BALANCE:
