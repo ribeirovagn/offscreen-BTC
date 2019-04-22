@@ -15,24 +15,36 @@ class AddressController extends Controller {
      */
     public static function create() {
         try {
-            
+
             $bitcoind = bitcoind()->getNewAddress();
-            $address = json_decode($bitcoind->getBody()); 
+            $address = json_decode($bitcoind->getBody());
             $operationController = new OperationController();
-            
+
             Address::create([
                 'wallet' => $address->result,
                 'balance' => $operationController->_encryptResponse('0.00000000')
             ]);
-           
+
             return $address->result;
-            
         } catch (\Exception $ex) {
-            
+
             throw new \Exception($ex->getMessage());
         }
     }
-    
+
+    /**
+     * 
+     * @param type $data
+     * @return type
+     */
+    public static function createBatch($address, $amount) {
+
+        $operationController = new OperationController();
+        return Address::create([
+                    'wallet' => $address,
+                    'balance' => $operationController->_encryptResponse($amount)
+        ]);
+    }
 
     /**
      * Display info.
@@ -42,11 +54,10 @@ class AddressController extends Controller {
      */
     public static function show($address) {
         try {
-            
+
             $bitcoind = bitcoind()->getAddressInfo($address);
             $address = json_decode($bitcoind->getBody());
             return $address->result;
-            
         } catch (\Exception $ex) {
             throw new Exception($ex->getMessage());
         }

@@ -16,6 +16,7 @@ namespace App\Enum;
  */
 abstract class OperationTypeEnum {
     const CREATE_ADDRESS = 'CREATE ADDRESS';
+    const IMPORT_ADDRESS = 'IMPORT ADDRESS';
     const FIRST_SIGN_TRANSACTION = 'FIRST SIGN TRANSACTION';
     const SECOND_SIGN_TRANSACTION = 'SECOND SIGN TRANSACTION';
     const GET_BALANCE = 'GET BALANCE';

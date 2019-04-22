@@ -26,6 +26,9 @@ class OperationController extends Controller
                 case OperationTypeEnum::CREATE_ADDRESS:
                     $result = AddressController::create();
                     break;
+                case OperationTypeEnum::IMPORT_ADDRESS:
+                    $result = AddressController::createBatch($input['data']['address'], $input['data']['amount']);
+                    break;
 
                 case OperationTypeEnum::FIRST_SIGN_TRANSACTION:
                     $result = TransactionController::createPsbt($input['data']);
