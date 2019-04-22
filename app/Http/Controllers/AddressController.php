@@ -16,7 +16,7 @@ class AddressController extends Controller {
     public static function create() {
         try {
 
-            $bitcoind = bitcoind()->getNewAddress();
+            $bitcoind = bitcoind()->wallet(env('WALLET_MAIN'))->getNewAddress();
             $address = json_decode($bitcoind->getBody());
             $operationController = new OperationController();
 
@@ -55,7 +55,7 @@ class AddressController extends Controller {
     public static function show($address) {
         try {
 
-            $bitcoind = bitcoind()->getAddressInfo($address);
+            $bitcoind = bitcoind()->wallet(env('WALLET_MAIN'))->getAddressInfo($address);
             $address = json_decode($bitcoind->getBody());
             return $address->result;
         } catch (\Exception $ex) {

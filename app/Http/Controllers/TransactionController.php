@@ -58,7 +58,7 @@ class TransactionController extends Controller {
             }
 
 
-            $rawchangeaddress = (bitcoind()->getrawchangeaddress())->get();
+            $rawchangeaddress = (bitcoind()->wallet(env('WALLET_MAIN'))->getrawchangeaddress())->get();
 
             $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
 //            $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
@@ -75,10 +75,6 @@ class TransactionController extends Controller {
 
             $decode = (bitcoind()->wallet(env('WALLET_MAIN'))->decoderawtransaction($sign['hex']))->get();
 
-
-
-
-            return $decode;
             $multisigTrans[] = [
                 'txid' => $decode['txid'],
                 'vout' => 0,
@@ -92,7 +88,7 @@ class TransactionController extends Controller {
             $hex = (bitcoind()->wallet(env('WALLET_MAIN'))->createrawtransaction($multisigTrans, $options))->get();
 
 
-            $decode = (bitcoind()->decoderawtransaction($hex))->get();
+            $decode = (bitcoind()->wallet(env('WALLET_MAIN'))->decoderawtransaction($hex))->get();
 
 //            return $decode;
 
@@ -156,7 +152,7 @@ class TransactionController extends Controller {
 
             $decode = (bitcoind()->wallet(env('WALLET_MAIN'))->decoderawtransaction($final['hex']))->get();
 
-            $testmempoolaccept = (bitcoind()->testmempoolaccept([$final['hex']]))->get();
+            $testmempoolaccept = (bitcoind()->wallet(env('WALLET_MAIN'))->testmempoolaccept([$final['hex']]))->get();
 
             if ($testmempoolaccept[0]['allowed']) {
                 $sender = bitcoind()->wallet(env('WALLET_MAIN'))->sendrawtransaction($final['hex']);
