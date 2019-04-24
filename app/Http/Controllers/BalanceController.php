@@ -16,7 +16,8 @@ class BalanceController extends Controller
      */
     public static function getBalance(){
         try {
-            $bitcoind = bitcoind()->wallet(env('WALLET_MAIN'))->getBalance();
+            
+            $bitcoind = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->getBalance();
             $address = json_decode($bitcoind->getBody());
             return $address->result;
         } catch (\Exception $ex) {
@@ -33,7 +34,9 @@ class BalanceController extends Controller
      */
     public static function show($address){
         $operationController = new OperationController();
-        $balance = Address::where('wallet', $address)->first();
+        $balance = Address::where('wallet', $address)
+                ->where('application_data_id', $GLOBALS['app_response']['ip'])
+                ->first();
         
         if(is_null($balance)){
             throw new \Exception('Remetente não encontrado');
@@ -101,6 +104,11 @@ class BalanceController extends Controller
         
         $balance->update();
                 
+    }
+    
+    
+    public function checkMultiWallet(){
+        return $GLOBALS['app_response'];
     }
     
 

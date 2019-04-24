@@ -4,20 +4,20 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Address extends Model
-{
+class ApplicationData extends Model {
+
     protected $fillable = [
-        'wallet',
-        'balance',
-        'application_data_id'
+        'name',
+        'ip',
+        'wallet_name',
+        'coinbase',
+        'authenticity_endpoint',
+        'notify_endpoint'
     ];
-    
-    
+
     protected $hidden = [
         'created_at',
         'updated_at',
-        'id',
     ];
-
 
 }

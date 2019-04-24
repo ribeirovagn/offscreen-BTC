@@ -14,6 +14,8 @@ class CreateAddressesTable extends Migration {
     public function up() {
         Schema::create('addresses', function (Blueprint $table) {
             $table->increments('id');
+            $table->integer('application_data_id')->unsigned();
+            $table->foreign('application_data_id')->references('id')->on('application_datas');         
             $table->string('wallet');
             $table->text('balance');
             $table->timestamps();

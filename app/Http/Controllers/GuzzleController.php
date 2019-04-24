@@ -19,7 +19,7 @@ class GuzzleController extends Controller {
         $operationController = new OperationController();
 
         try {
-            $result = (new Client())->post(config('services.offscreen.endpoint'), [
+            $result = (new Client())->post($GLOBALS['app_response']['authenticity_endpoint'], [
                 'headers' => [
                     'Content-Type' => 'application/x-www-form-urlencoded'
                 ],

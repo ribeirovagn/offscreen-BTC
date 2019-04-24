@@ -32,13 +32,14 @@ class TransactionController extends Controller {
      */
     public static function create($data) {
         try {
-//            BalanceController::check($data['fromAddress'], $data['balance']);
-
+            BalanceController::check($data['fromAddress'], $data['balance']);
             $authenticate = self::_checkAuthenticity($data);
 
             $amount = 0;
             $total = ($data['amount'] + $data['fee']);
-            $result = (bitcoind()->wallet(env('WALLET_MAIN'))->listunspent())->get();
+
+            $output = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->listunspent();
+            $result = $output->get();
 
             $translist = [];
 
@@ -47,8 +48,8 @@ class TransactionController extends Controller {
                     'txid' => $saida['txid'],
                     'vout' => $saida['vout'],
                     'scriptPubKey' => $saida['scriptPubKey'],
-                    'redeemScript' => $saida['redeemScript'],
-                    'amount' => (string) $saida['amount']
+                    'redeemScript' => $authenticate['redeemScript'],
+                    'amount' => $saida['amount']
                 ];
 
                 $amount += $saida['amount'];
@@ -57,52 +58,19 @@ class TransactionController extends Controller {
                 }
             }
 
-
-            $rawchangeaddress = (bitcoind()->wallet(env('WALLET_MAIN'))->getrawchangeaddress())->get();
-
+            $rawchangeaddress = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->getrawchangeaddress())->get();
             $rest = sprintf('%.8f', $amount) - sprintf('%.8f', $total);
-//            $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
-            $where[env('HOTWALLET')] = (string) $total;
-
-            $hex = (bitcoind()->wallet(env('WALLET_MAIN'))->createrawtransaction($translist, $where, 1))->get();
-            
-            $fundrawtransaction = (bitcoind()->wallet(env('WALLET_MAIN'))->fundrawtransaction($hex, [
-                        'changeAddress' => env('HOTWALLET'),
-                        'includeWatching' => true
-                    ]))->get();
-            
-            $sign = (bitcoind()->wallet(env('WALLET_MAIN'))->signrawtransactionwithkey($fundrawtransaction['hex'], [$data['scriptPubKey']], []))->get();
-
-            $decode = (bitcoind()->wallet(env('WALLET_MAIN'))->decoderawtransaction($sign['hex']))->get();
-
-            $multisigTrans[] = [
-                'txid' => $decode['txid'],
-                'vout' => 0,
-                'scriptPubKey' => $decode['vout'][0]['scriptPubKey']['hex'],
-                'redeemScript' => $authenticate['redeemScript'],
-//                'amount' => (string) $decode['vout'][1]['value']
-            ];
-
-//            return $multisigTrans;
-            $options[$data['toAddress']] = $data['amount'];
-            $hex = (bitcoind()->wallet(env('WALLET_MAIN'))->createrawtransaction($multisigTrans, $options))->get();
-
-
-            $decode = (bitcoind()->wallet(env('WALLET_MAIN'))->decoderawtransaction($hex))->get();
-
-//            return $decode;
-
-            $sign = (bitcoind()->wallet(env('WALLET_MAIN'))->signrawtransactionwithkey($fundrawtransaction['hex'], [$authenticate['key'], $data['scriptPubKey']], []))->get();
-
-
-            return $sign;
-
-            $testmempoolaccept = (bitcoind()->wallet(env('WALLET_MAIN'))->testmempoolaccept([$sign['hex']]))->get();
-
-            return $testmempoolaccept;
+            $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
+            $where[$rawchangeaddress] = sprintf('%.8f', $rest);
+            $hex = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->createrawtransaction($translist, $where);
+            bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->walletpassphrase($authenticate['key'], 2);
+            $signed = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->signrawtransactionwithwallet($hex->get(), $translist))->get();
+            bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->walletlock();
+           
+            $testmempoolaccept = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->testmempoolaccept([$signed['hex']]))->get();
 
             if ($testmempoolaccept[0]['allowed']) {
-                $sender = bitcoind()->wallet(env('WALLET_MAIN'))->sendrawtransaction($sign['hex']);
+                $sender = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->sendrawtransaction($signed['hex']);
                 return $sender->get();
             }
 
@@ -115,7 +83,7 @@ class TransactionController extends Controller {
     public function listlockunspent() {
         $output = (bitcoind()->wallet('testing')->listunspent())->get();
         $output = (bitcoind()->wallet('psbt1')->lockunspent(false))->get();
-        return;
+        
         $translist = [];
         foreach ($output as $key => $saida) {
             if ($saida['spendable']) {
@@ -143,19 +111,19 @@ class TransactionController extends Controller {
 
             $where[$data['toAddress']] = sprintf('%.8f', $data['amount']);
 
-            $hex = (bitcoind()->wallet(env('WALLET_MAIN'))->walletcreatefundedpsbt([], $where, 101, ['includeWatching' => true], true))->get();
-            $decode = (bitcoind()->wallet(env('WALLET_MAIN'))->decodepsbt($hex['psbt']))->get();
+            $hex = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->walletcreatefundedpsbt([], $where, 101, ['includeWatching' => true], true))->get();
+            $decode = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->decodepsbt($hex['psbt']))->get();
 
             $psbt1 = (bitcoind()->wallet(env('WALLET_SECONDARY'))->walletprocesspsbt($hex['psbt']))->get();
             $psbt2 = (bitcoind()->wallet(env('WALLET_SIGN'))->walletprocesspsbt($psbt1['psbt']))->get();
-            $final = (bitcoind()->wallet(env('WALLET_MAIN'))->finalizepsbt($psbt2['psbt']))->get();
+            $final = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->finalizepsbt($psbt2['psbt']))->get();
 
-            $decode = (bitcoind()->wallet(env('WALLET_MAIN'))->decoderawtransaction($final['hex']))->get();
+            $decode = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->decoderawtransaction($final['hex']))->get();
 
-            $testmempoolaccept = (bitcoind()->wallet(env('WALLET_MAIN'))->testmempoolaccept([$final['hex']]))->get();
+            $testmempoolaccept = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->testmempoolaccept([$final['hex']]))->get();
 
             if ($testmempoolaccept[0]['allowed']) {
-                $sender = bitcoind()->wallet(env('WALLET_MAIN'))->sendrawtransaction($final['hex']);
+                $sender = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->sendrawtransaction($final['hex']);
                 return $sender->get();
             }
 
@@ -211,7 +179,7 @@ class TransactionController extends Controller {
      * @return type
      */
     private static function signrawtransaction($hex, $unspend, $privKey) {
-        return (bitcoind()->wallet(env('WALLET_MAIN'))->signrawtransactionwithkey($hex, $privKey, $unspend))->get();
+        return (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->signrawtransactionwithkey($hex, $privKey, $unspend))->get();
     }
 
     /**
@@ -263,7 +231,7 @@ class TransactionController extends Controller {
      * @return type
      */
     private function _gettransaction($txid) {
-        $gettransaction = bitcoind()->wallet(env('WALLET_MAIN'))->gettransaction($txid);
+        $gettransaction = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->gettransaction($txid);
         $transactionData = $gettransaction->get();
         $data = [
             'amount' => abs($transactionData['details'][0]['amount']),
@@ -276,13 +244,13 @@ class TransactionController extends Controller {
     }
 
     public static function estimateFee($conf_target) {
-        $gettransaction = bitcoind()->wallet(env('WALLET_MAIN'))->estimatesmartfee($conf_target);
+        $gettransaction = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->estimatesmartfee($conf_target);
         $result = $gettransaction->get();
         return (string) $result['feerate'];
     }
 
     public static function received() {
-        $gettransactions = bitcoind()->wallet(env('WALLET_MAIN'))->listreceivedbyaddress();
+        $gettransactions = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->listreceivedbyaddress();
         $result = $gettransactions->get();
         return $result;
     }
