@@ -64,5 +64,9 @@ class AddressController extends Controller {
             throw new Exception($ex->getMessage());
         }
     }
+    
+    public static function getCredentials(){
+        
+    }
 
 }

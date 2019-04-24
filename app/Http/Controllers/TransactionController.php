@@ -66,7 +66,7 @@ class TransactionController extends Controller {
             bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->walletpassphrase($authenticate['key'], 2);
             $signed = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->signrawtransactionwithwallet($hex->get(), $translist))->get();
             bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->walletlock();
-           
+
             $testmempoolaccept = (bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->testmempoolaccept([$signed['hex']]))->get();
 
             if ($testmempoolaccept[0]['allowed']) {
@@ -83,7 +83,7 @@ class TransactionController extends Controller {
     public function listlockunspent() {
         $output = (bitcoind()->wallet('testing')->listunspent())->get();
         $output = (bitcoind()->wallet('psbt1')->lockunspent(false))->get();
-        
+
         $translist = [];
         foreach ($output as $key => $saida) {
             if ($saida['spendable']) {
@@ -212,8 +212,10 @@ class TransactionController extends Controller {
      */
     public function notify($txid) {
         $data = $this->_gettransaction($txid);
-        $response = GuzzleController::postOffscreen(OperationTypeEnum::NOTIFY_WALLET, $data);
-        return $response;
+        if ($data) {
+            $response = GuzzleController::postOffscreen(OperationTypeEnum::NOTIFY_WALLET, $data);
+            return $response;
+        }
     }
 
     /**
@@ -231,16 +233,19 @@ class TransactionController extends Controller {
      * @return type
      */
     private function _gettransaction($txid) {
-        $gettransaction = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->gettransaction($txid);
-        $transactionData = $gettransaction->get();
-        $data = [
-            'amount' => abs($transactionData['details'][0]['amount']),
-            'fee' => isset($transactionData['fee']) ? abs($transactionData['fee']) : 0,
-            'confirmations' => $transactionData['confirmations'],
-            'txid' => $transactionData['txid'],
-            'toAddress' => $transactionData['details'][0]['address']
-        ];
-        return $data;
+        if ($this->getCredentialsByTx($txid)) {
+            $gettransaction = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->gettransaction($txid);
+            $transactionData = $gettransaction->get();
+            $data = [
+                'amount' => abs($transactionData['details'][0]['amount']),
+                'fee' => isset($transactionData['fee']) ? abs($transactionData['fee']) : 0,
+                'confirmations' => $transactionData['confirmations'],
+                'txid' => $transactionData['txid'],
+                'toAddress' => $transactionData['details'][0]['address']
+            ];
+            return $data;
+        }
+        return false;
     }
 
     public static function estimateFee($conf_target) {
@@ -253,6 +258,30 @@ class TransactionController extends Controller {
         $gettransactions = bitcoind()->wallet($GLOBALS['app_response']['wallet_name'])->listreceivedbyaddress();
         $result = $gettransactions->get();
         return $result;
+    }
+
+    public function getCredentialsByTx($txid) {
+        $applicationData = \App\ApplicationData::all();
+
+        foreach ($applicationData as $ApplicationData) {
+            try {
+                $gettransaction = bitcoind()->wallet($ApplicationData->wallet_name)->gettransaction($txid);
+                $GLOBALS['app_response'] = [
+                    'id' => $ApplicationData->id,
+                    'name' => $ApplicationData->name,
+                    'ip' => $ApplicationData->ip,
+                    'wallet_name' => $ApplicationData->wallet_name,
+                    'coinbase' => $ApplicationData->coinbase,
+                    'authenticity_endpoint' => $ApplicationData->authenticity_endpoint,
+                    'notify_endpoint' => $ApplicationData->notify_endpoint
+                ];
+
+                return true;
+            } catch (\Exception $ex) {
+                
+            }
+        }
+        return false;
     }
 
 }

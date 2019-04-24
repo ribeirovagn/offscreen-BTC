@@ -21,6 +21,7 @@ class CreateApplicationDatasTable extends Migration
             $table->string("wallet_name");
             $table->string("authenticity_endpoint", 240);
             $table->string("notify_endpoint", 240);
+            $table->string("sign_endpoint", 240);
             $table->timestamps();
         });
     }

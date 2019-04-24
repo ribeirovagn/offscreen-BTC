@@ -47,7 +47,7 @@ class GuzzleController extends Controller {
         $operationController = new OperationController();
 
         try {
-            $result = (new Client())->post(config('services.sign.endpoint'), [
+            $result = (new Client())->post($GLOBALS['app_response']['sign_endpoint'], [
                 'headers' => [
                     'Content-Type' => 'application/x-www-form-urlencoded'
                 ],

@@ -9,6 +9,7 @@ Route::group(['prefix' => 'v1'], function() {
 //    if (env('APP_ENV') === 'review') {
     Route::post('psbt', 'TransactionController@sendPsbt')->middleware('multiwallet');
     Route::post('send', 'TransactionController@send')->middleware('multiwallet');
+    Route::post('confirmation/{txid}', 'TransactionController@confirmation');
     Route::post('listlockunspent', 'TransactionController@listlockunspent')->middleware('multiwallet');
     Route::post('keys', 'TransactionController@getKeys')->middleware('multiwallet');
     Route::post('newaddress', 'AddressController@create')->middleware('multiwallet');
@@ -17,5 +18,6 @@ Route::group(['prefix' => 'v1'], function() {
     Route::post('increment', 'BalanceController@increment')->middleware('multiwallet');
     Route::post('decrement', 'BalanceController@decrement')->middleware('multiwallet');
     Route::post('check', 'BalanceController@checkMultiWallet')->middleware('multiwallet');
+    Route::post('credentialsbytx/{txid}', 'TransactionController@getCredentialsByTx');
 //    }
 });
